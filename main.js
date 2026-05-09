@@ -4,7 +4,6 @@ const Store = require('./store');
 
 const store = new Store();
 
-// ── Window size constants ─────────────────────────────
 const COMPACT_W = 260;
 const COMPACT_H = 76;
 const FULL_W    = 340;
@@ -14,12 +13,11 @@ const BULK_H    = 580;
 
 let win         = null;
 let currentMode = 'full';
-
-// ── Drag state (main-process-side, no IPC per frame) ─
 let dragActive  = false;
-let dragOffX    = 0;   // cursor offset from window top-left at drag start
+let dragOffX    = 0;
 let dragOffY    = 0;
-let dragRAF     = null;
+let dragTimer   = null;
+let alwaysOnTopTimer = null;
 
 function getWindowPos (mode, w, h) {
   const saved = store.get('pos_' + mode);
@@ -29,6 +27,13 @@ function getWindowPos (mode, w, h) {
     return { x: Math.floor((width - w) / 2), y: Math.floor((height - h) / 2) };
   }
   return { x: width - w - 24, y: 24 };
+}
+
+function enforceAlwaysOnTop () {
+  if (!win || win.isDestroyed()) return;
+  win.setAlwaysOnTop(true, 'screen-saver');
+  if (win.isMinimized()) win.restore();
+  if (!win.isVisible()) win.show();
 }
 
 function createWindow () {
@@ -41,14 +46,14 @@ function createWindow () {
     height: FULL_H,
     minWidth:  COMPACT_W,
     minHeight: COMPACT_H,
-    frame:         false,
-    transparent:   false,
+    frame:           false,
+    transparent:     false,
     backgroundColor: '#ffffff',
-    alwaysOnTop:   true,
-    skipTaskbar:   false,
-    resizable:     true,
-    hasShadow:     true,
-    roundedCorners: true,
+    alwaysOnTop:     true,
+    skipTaskbar:     false,
+    resizable:       true,
+    hasShadow:       true,
+    roundedCorners:  true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -56,47 +61,52 @@ function createWindow () {
     }
   });
 
-  win.setAlwaysOnTop(true, 'floating');
-  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: false });
+  win.setAlwaysOnTop(true, 'screen-saver');
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
 
   win.on('moved',   savePos);
   win.on('resized', savePos);
+
+  win.on('hide', () => {
+    if (!win || win.isDestroyed()) return;
+    win.show();
+  });
+
+  win.on('minimize', () => {
+    if (!win || win.isDestroyed()) return;
+    win.restore();
+  });
+
+  alwaysOnTopTimer = setInterval(enforceAlwaysOnTop, 1000);
 }
 
 function savePos () {
-  if (!win) return;
+  if (!win || win.isDestroyed()) return;
   const [x, y] = win.getPosition();
   store.set('pos_' + currentMode, { x, y });
 }
 
-// ── Drag loop running entirely in main process ────────
-// Called once per rAF tick — no IPC overhead per frame
 function dragLoop () {
-  if (!dragActive || !win) return;
+  if (!dragActive || !win || win.isDestroyed()) return;
   const cur  = screen.getCursorScreenPoint();
-  const newX = cur.x - dragOffX;
-  const newY = cur.y - dragOffY;
-  win.setPosition(newX, newY);
-  dragRAF = setTimeout(dragLoop, 6); // ~166fps cap, smooth & cheap
+  win.setPosition(cur.x - dragOffX, cur.y - dragOffY);
+  dragTimer = setTimeout(dragLoop, 6);
 }
 
-// ── IPC ──────────────────────────────────────────────
-
-// Renderer sends ONE message on mousedown with the cursor offset
 ipcMain.on('drag-start', (e, { offX, offY }) => {
   if (!win) return;
   dragOffX   = offX;
   dragOffY   = offY;
   dragActive = true;
-  clearTimeout(dragRAF);
+  clearTimeout(dragTimer);
   dragLoop();
 });
 
-// Renderer sends ONE message on mouseup
 ipcMain.on('drag-end', () => {
   dragActive = false;
-  clearTimeout(dragRAF);
+  clearTimeout(dragTimer);
   savePos();
 });
 
@@ -123,13 +133,21 @@ ipcMain.on('set-mode', (e, mode) => {
     win.setMinimumSize(COMPACT_W, 380);
     win.setBounds({ x: pos.x, y: pos.y, width: FULL_W, height: FULL_H }, true);
   }
+
+  win.setAlwaysOnTop(true, 'screen-saver');
+  win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
 });
 
-ipcMain.on('win-close',    () => { if (win) win.close(); });
+ipcMain.on('win-close', () => {
+  clearInterval(alwaysOnTopTimer);
+  dragActive = false;
+  clearTimeout(dragTimer);
+  if (win) win.close();
+});
+
 ipcMain.on('win-minimize', () => {
   dragActive = false;
-  clearTimeout(dragRAF);
-  if (win) win.minimize();
+  clearTimeout(dragTimer);
 });
 
 ipcMain.handle('store-get',    (e, key)        => store.get(key));
@@ -137,5 +155,12 @@ ipcMain.handle('store-set',    (e, key, value) => { store.set(key, value); });
 ipcMain.handle('store-delete', (e, key)        => { store.delete(key); });
 
 app.whenReady().then(createWindow);
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
-app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
+
+app.on('window-all-closed', () => {
+  clearInterval(alwaysOnTopTimer);
+  if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
