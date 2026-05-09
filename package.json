@@ -1,0 +1,41 @@
+{
+  "name": "vercel-balance-checker",
+  "version": "1.0.0",
+  "description": "Always-on-top floating Vercel AI Gateway balance checker",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build-portable": "electron-builder --win portable --x64",
+    "package": "electron-packager . \"Vercel Balance\" --platform=win32 --arch=x64 --out=dist-pkg --overwrite --no-prune --ignore=dist --ignore=dist-pkg"
+  },
+  "build": {
+    "appId": "com.vercel.balance-checker",
+    "productName": "Vercel Balance",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "sign": false
+    },
+    "portable": {
+      "artifactName": "VercelBalance-portable.exe"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "store.js",
+      "renderer/**/*",
+      "package.json"
+    ]
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.0.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  }
+}
