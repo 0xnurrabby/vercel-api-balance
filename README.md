@@ -1,6 +1,6 @@
 # VERCEL BALANCE
 
-> **Always-on-top floating desktop app** — shows your Vercel AI Gateway credit balance live, on top of every window.
+> **Always-on-top floating desktop app** .... shows your Vercel AI Gateway credit balance live, on top of every window.
 
 ---
 
@@ -25,7 +25,7 @@ No Node.js needed. Just download and run.
 - Auto-refreshes every 1s / 2s / 3s / 4s / 5s / 10s
 - **Compact mode** → tiny pill with just balance + used
 - **Bulk tester** → paste 50 keys, check all at once
-- Saves your API key — no re-entering after restart
+- Saves your API key .... no re-entering after restart
 
 ---
 
@@ -62,7 +62,7 @@ Default view. Balance, used, account name, API key input, compact toggle, bulk t
 ### COMPACT
 ```
 ┌──────────────────────────────────┐
-│ ▲ Vercel Balance  ●   ↗  —  ✕   │
+│ ▲ Vercel Balance  ●   ↗  -  ✕   │
 ├─────────────────┬────────────────┤
 │    BALANCE      │      USED      │
 │    $5.00        │     $0.61      │
@@ -95,7 +95,7 @@ Settings are saved to `%APPDATA%\vercel-balance-checker\config.json`
 ├── preload.js        ipc bridge
 ├── store.js          json config persistence  
 ├── renderer/
-│   └── index.html    all ui — full, compact, bulk
+│   └── index.html    all ui (full, compact, bulk)
 └── package.json
 ```
 
