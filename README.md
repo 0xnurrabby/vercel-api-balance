@@ -51,7 +51,7 @@ npm start
 ## GET YOUR VERCEL TOKEN
 
 ```
-vercel.com/account/tokens  →  Create Token  →  No Expiration  →  Copy
+vercel.com/your-project/ai-gateway/api-keys  →  Create Token  →  No Expiration  →  Copy
 ```
 
 Paste it into the app → **Save**. That's it.
