@@ -6,9 +6,13 @@
 
 ## ⬇ DOWNLOAD
 
-**→ [Download .exe from Releases](https://github.com/0xnurrabby/vercel-api-balance/releases/latest)**
+**→ [Download VercelBalance-win64.zip from Releases](https://github.com/0xnurrabby/vercel-api-balance/releases/latest)**
 
-No Node.js needed. Just download and run.
+1. Download `VercelBalance-win64.zip`
+2. Extract the zip anywhere
+3. Open the extracted folder, run `Vercel Balance.exe`
+
+No Node.js needed.
 
 ---
 
